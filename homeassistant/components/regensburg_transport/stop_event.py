@@ -4,8 +4,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-# from .const import DEFAULT_ICON, TRANSPORT_TYPE_VISUALS
-DEFAULT_ICON = "mdi:clock"
+from .const import DEFAULT_ICON
 
 
 @dataclass
@@ -19,7 +18,7 @@ class StopEvent:
     estimated: datetime
     gap: int
 
-    icon: str | None = None
+    icon: str = DEFAULT_ICON
 
     def __rvv_to_datetime(self):
         timestamp = datetime.fromisoformat(self)
@@ -46,6 +45,7 @@ class StopEvent:
             planned=dep_planned,
             estimated=dep_estimated,
             gap=dep_gap,
+            icon=DEFAULT_ICON,
         )
 
     def to_dict(self):
@@ -57,4 +57,21 @@ class StopEvent:
             "planned": self.planned,
             "estimated": self.estimated,
             "gap": self.gap,
+        }
+
+    def to_string(self):
+        """Convert the StopEvent instance to a dictionary."""
+        est_time = self.estimated.strftime("%H:%M")
+        str_stop = (
+            self.transportation_nr
+            + " "
+            + self.transportation_direction
+            + ": "
+            + est_time
+            + " ("
+            + str(self.gap)
+            + "min delay)"
+        )
+        return {
+            str_stop,
         }

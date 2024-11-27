@@ -16,8 +16,8 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import (
     API_ENDPOINT,
-    API_MAX_RESULTS,
     CONF_DEPARTURES_NAME,
+    CONF_DEPARTURES_SHORT_NAME,
     CONF_DEPARTURES_STOP_ID,
     DOMAIN,
 )
@@ -39,12 +39,12 @@ def get_stop_id(name) -> list[dict[str, Any]] | None:
     """Fetch stop IDs based on the provided name."""
     try:
         response = requests.get(
-            url=f"{API_ENDPOINT}/tr/pointfinder",
+            url=f"{API_ENDPOINT}/XML_STOPFINDER_REQUEST",
             params={
-                "query": name,
-                "stopsOnly": True,
-                "format": "json",
-                "limit": API_MAX_RESULTS,
+                "commonMacro": "stopfinder",
+                "outputFormat": "rapidJSON",
+                "type_sf": "any",
+                "name_sf": name,
             },
             timeout=30,
         )
@@ -60,7 +60,7 @@ def get_stop_id(name) -> list[dict[str, Any]] | None:
 
     # parse JSON response
     try:
-        stops = json.loads(response.text).get("Points")
+        stops = json.loads(response.text).get("locations")
     except json.JSONDecodeError as ex:
         _LOGGER.error("API invalid JSON: %s", ex)
         return []
@@ -68,12 +68,12 @@ def get_stop_id(name) -> list[dict[str, Any]] | None:
     # convert api data into objects
     return [
         {
-            CONF_DEPARTURES_NAME: f"{stop_name} ({city_name})",
-            CONF_DEPARTURES_STOP_ID: stop_id,
+            CONF_DEPARTURES_NAME: stop.get("name"),
+            CONF_DEPARTURES_STOP_ID: stop.get("id"),
+            CONF_DEPARTURES_SHORT_NAME: stop.get("disassembledName"),
         }
-        for stop_id, _, city_name, stop_name, _, _, _, _, _ in (
-            stop.split("|") for stop in stops
-        )
+        for stop in stops
+        if stop.get("isGlobalId")
     ]
 
 
@@ -141,6 +141,12 @@ class TransportConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_stop()
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle the reconfiguration."""
+        return await self.async_step_user(user_input)
+
     async def async_step_stop(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -153,7 +159,11 @@ class TransportConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         selected_stop = next(
-            (stop[CONF_DEPARTURES_NAME], stop[CONF_DEPARTURES_STOP_ID])
+            (
+                stop[CONF_DEPARTURES_NAME],
+                stop[CONF_DEPARTURES_STOP_ID],
+                stop[CONF_DEPARTURES_SHORT_NAME],
+            )
             for stop in self.data[CONF_FOUND_STOPS]
             if user_input[CONF_SELECTED_STOP]
             == f"{stop[CONF_DEPARTURES_NAME]} [{stop[CONF_DEPARTURES_STOP_ID]}]"
@@ -161,25 +171,14 @@ class TransportConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         (
             self.data[CONF_DEPARTURES_NAME],
             self.data[CONF_DEPARTURES_STOP_ID],
+            self.data[CONF_DEPARTURES_SHORT_NAME],
         ) = selected_stop
         _LOGGER.debug("OK: selected stop %s [%s]", selected_stop[0], selected_stop[1])
-
-        return await self.async_step_details()
-
-    async def async_step_details(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Handle the details."""
-        if user_input is None:
-            return self.async_show_form(
-                step_id="details",
-                data_schema=NAME_SCHEMA,
-                errors={},
-            )
 
         data = user_input
         data[CONF_DEPARTURES_STOP_ID] = self.data[CONF_DEPARTURES_STOP_ID]
         data[CONF_DEPARTURES_NAME] = self.data[CONF_DEPARTURES_NAME]
+        data[CONF_DEPARTURES_SHORT_NAME] = self.data[CONF_DEPARTURES_SHORT_NAME]
         return self.async_create_entry(
             title=f"{data[CONF_DEPARTURES_NAME]} [{data[CONF_DEPARTURES_STOP_ID]}]",
             data=data,

@@ -67,5 +67,8 @@
         ]
       }
     }
-  }
+  },
+  "mounts": [
+    "source=D:\\Projekte\\ha-regensburg-transport\\custom_components\\regensburg_transport,target=${containerWorkspaceFolder}/config/custom_components/regensburg_transport,type=bind"
+  ]
 }

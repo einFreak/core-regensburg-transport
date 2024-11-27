@@ -2,20 +2,20 @@
   "config": {
     "step": {
       "user": {
+        "title": "Search Stop",
+        "description": "Enter the Name of the Stop to find the Stop ID",
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]"
+          "search": "Name of the Stop"
+        }
+      },
+      "stop": {
+        "title": "Select Stop",
+        "description": "Select the desired Stop",
+        "data": {
+          "name": "Name of the Stop",
+          "stop_id": "ID of the Stop"
         }
       }
-    },
-    "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
-    },
-    "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
   }
 }

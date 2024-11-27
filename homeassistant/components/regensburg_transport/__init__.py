@@ -30,3 +30,10 @@ async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry) 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:  # pylint: disable=unused-argument
     """Set up the Regensburg Transport integration."""
     return True
+
+
+# async def async_setup(hass, config):
+#     # hass.states.async_set("hello_state.world", "Paulus")
+
+#     # Return boolean to indicate that initialization was successful.
+#     return True
